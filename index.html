@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Семейный бюджет — расходы</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <main class="page">
+    <header class="page-header">
+      <span class="brand-mark" aria-hidden="true">↗</span>
+      <div><p class="eyebrow">СЕМЕЙНЫЙ БЮДЖЕТ</p><h1>Наши расходы</h1></div>
+    </header>
+    <section class="card" aria-labelledby="form-title">
+      <div class="section-heading"><h2 id="form-title">Добавить трату</h2><span class="quiet">Каждая мелочь на счету</span></div>
+      <form id="expense-form" novalidate>
+        <div class="form-grid">
+          <div class="field"><label for="amount">Сумма</label><input id="amount" name="amount" type="text" inputmode="decimal" placeholder="0,00" required aria-describedby="amount-error"><p id="amount-error" class="error" aria-live="polite"></p></div>
+          <div class="field"><label for="category">Категория</label><select id="category" name="category" required aria-describedby="category-error"></select><p id="category-error" class="error" aria-live="polite"></p></div>
+          <div id="new-category-fields" class="field full" hidden>
+            <label for="new-category">Новая категория</label>
+            <div class="category-row"><input id="new-category" type="text" placeholder="Например, Здоровье" aria-describedby="new-category-error"><button id="add-category" type="button" class="secondary">Добавить категорию</button></div>
+            <p id="new-category-error" class="error" aria-live="polite"></p>
+          </div>
+          <div class="field"><label for="date">Дата</label><input id="date" name="date" type="date" required aria-describedby="date-error"><p id="date-error" class="error" aria-live="polite"></p></div>
+          <div class="field"><label for="comment">Комментарий <span class="optional">необязательно</span></label><input id="comment" name="comment" type="text" placeholder="На что потратили?"></div>
+        </div>
+        <div class="form-footer"><span class="privacy">Данные хранятся в этом браузере</span><button type="submit">＋ Добавить трату</button></div>
+        <p id="storage-error" class="error" role="alert"></p>
+        <p id="status" class="sr-only" role="status"></p>
+      </form>
+    </section>
+    <section class="summary" aria-labelledby="total-title">
+      <div><p id="total-title">Итого за текущий месяц</p><span id="month-label"></span></div>
+      <strong id="month-total" aria-live="polite">0,00</strong>
+    </section>
+    <section class="card category-summary" aria-labelledby="category-totals-title">
+      <div class="section-heading"><h2 id="category-totals-title">По категориям за текущий месяц</h2></div>
+      <dl id="category-totals" class="category-totals"></dl>
+    </section>
+    <section class="card history" aria-labelledby="history-title">
+      <div class="section-heading"><h2 id="history-title">Все траты</h2><span class="quiet">Сначала новые</span></div>
+      <p id="empty-state" class="empty">Пока нет трат<span>Добавьте первую — она появится здесь.</span></p>
+      <ul id="expense-list" class="expense-list"></ul>
+    </section>
+    <footer class="page-footer">Маленькие записи. Понятный бюджет.</footer>
+  </main>
+  <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description">
+    <h2 id="delete-title">Удалить трату?</h2>
+    <p id="delete-description"></p>
+    <p class="delete-warning">Удаление нельзя отменить.</p>
+    <p id="delete-error" class="error" role="alert"></p>
+    <form method="dialog" class="dialog-actions">
+      <button class="secondary" value="cancel" autofocus>Отмена</button>
+      <button id="confirm-delete" type="button" class="danger">Удалить</button>
+    </form>
+  </dialog>
+</body>
+</html>
