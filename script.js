@@ -6,7 +6,8 @@ const DEFAULT_CATEGORIES = ["Еда", "Транспорт", "Дом"];
 const $ = (id) => document.getElementById(id);
 const moneyFormatter = new Intl.NumberFormat("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const dateFormatter = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: "long", year: "numeric" });
-let state = { categories: [...DEFAULT_CATEGORIES], expenses: [] };
+let state = { categories: [...DEFAULT_CATEGORIES], expenses: [], budgets: {} };
+let renderedBudgetMonth = "";
 let storageReadable = true;
 let pendingExpense = null;
 let pendingPosition = 0;
@@ -24,12 +25,12 @@ function validDate(value) {
   return year > 0 && date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
 }
 
-function parseAmount(value) {
+function parseAmount(value, allowZero = false) {
   const normalized = value.trim().replace(",", ".");
   if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
   const [whole, fraction = ""] = normalized.split(".");
-  const cents = Number(whole) * 100 + Number(fraction.padEnd(2, "0"));
-  return Number.isSafeInteger(cents) && cents > 0 ? cents : null;
+  const cents = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
+  return cents <= BigInt(Number.MAX_SAFE_INTEGER) && (allowZero || cents > 0n) ? Number(cents) : null;
 }
 
 function formatMoney(cents) {
@@ -56,7 +57,14 @@ function load() {
         && data.categories.includes(item.category) && typeof item.comment === "string")) {
       throw new Error("Invalid saved data");
     }
-    state = data;
+    if (data.budgets !== undefined && (!data.budgets || typeof data.budgets !== "object" || Array.isArray(data.budgets)
+      || !Object.entries(data.budgets).every(([month, limits]) => /^\d{4}-\d{2}$/.test(month) && validDate(`${month}-01`)
+        && Array.isArray(limits) && limits.every((limit) => limit && data.categories.includes(limit.category)
+          && Number.isSafeInteger(limit.cents) && limit.cents >= 0)
+        && new Set(limits.map((limit) => limit.category)).size === limits.length))) {
+      throw new Error("Invalid saved budgets");
+    }
+    state = { ...data, budgets: data.budgets || {} };
   } catch {
     storageReadable = false;
     $("storage-error").textContent = "Не удалось прочитать сохранённые данные. Проверьте доступ к хранилищу браузера. Добавление приостановлено, чтобы сохранить прежние записи.";
@@ -91,7 +99,79 @@ function renderCategories(selected = state.categories[0]) {
   $("category").value = selected;
 }
 
+function renderLimits() {
+  const month = today().slice(0, 7);
+  // Keep unfinished input and keyboard focus when the window regains focus.
+  if (renderedBudgetMonth === month && $("category-limits").children.length === state.categories.length) return;
+  renderedBudgetMonth = month;
+  $("budget-month").textContent = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(new Date());
+  const fragment = document.createDocumentFragment();
+  state.categories.forEach((name, index) => {
+    const form = document.createElement("form");
+    form.className = "limit-form";
+    form.noValidate = true;
+    const label = document.createElement("label");
+    label.htmlFor = `limit-${index}`;
+    label.textContent = `Лимит: ${name}`;
+    const saved = document.createElement("p");
+    saved.className = "limit-saved";
+    saved.setAttribute("aria-live", "polite");
+    const limit = (state.budgets[month] || []).find((item) => item.category === name);
+    saved.textContent = limit ? `Лимит: ${formatMoney(limit.cents)}` : "Лимит: Не задан";
+    const controls = document.createElement("div");
+    controls.className = "limit-controls";
+    const input = document.createElement("input");
+    input.id = `limit-${index}`;
+    input.type = "text";
+    input.inputMode = "decimal";
+    input.placeholder = "Не задан";
+    input.value = limit ? `${Math.floor(limit.cents / 100)},${String(limit.cents % 100).padStart(2, "0")}` : "";
+    input.setAttribute("aria-describedby", `limit-${index}-error`);
+    const button = document.createElement("button");
+    button.type = "submit";
+    button.className = "secondary";
+    button.textContent = "Сохранить";
+    button.setAttribute("aria-label", `Сохранить лимит: ${name}`);
+    const message = document.createElement("p");
+    message.id = `limit-${index}-error`;
+    message.className = "error";
+    message.setAttribute("aria-live", "polite");
+    controls.append(input, button);
+    form.append(label, saved, controls, message);
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (month !== today().slice(0, 7)) {
+        renderLimits();
+        $("status").textContent = "Начался новый месяц. Задайте лимит заново.";
+        return;
+      }
+      const empty = input.value.trim() === "";
+      const cents = empty ? null : parseAmount(input.value, true);
+      message.textContent = "";
+      input.setAttribute("aria-invalid", "false");
+      if (!empty && cents === null) {
+        message.textContent = "Введите сумму от нуля, не более двух знаков после запятой, в допустимом диапазоне.";
+        input.setAttribute("aria-invalid", "true");
+        input.focus();
+        return;
+      }
+      const limits = (state.budgets[month] || []).filter((item) => item.category !== name);
+      if (!empty) limits.push({ category: name, cents });
+      if (!save({ ...state, budgets: { ...state.budgets, [month]: limits } })) {
+        message.textContent = "Не удалось сохранить лимит. Прежний лимит не изменён. Проверьте доступ к хранилищу браузера.";
+        return;
+      }
+      saved.textContent = empty ? "Лимит: Не задан" : `Лимит: ${formatMoney(cents)}`;
+      input.value = empty ? "" : `${Math.floor(cents / 100)},${String(cents % 100).padStart(2, "0")}`;
+      $("status").textContent = empty ? `Лимит категории «${name}» снят.` : `Лимит категории «${name}» сохранён.`;
+    });
+    fragment.append(form);
+  });
+  $("category-limits").replaceChildren(fragment);
+}
+
 function renderExpenses() {
+  renderLimits();
   const month = today().slice(0, 7);
   const categoryTotals = new Map(state.categories.map((name) => [name, 0n]));
   let total = 0n;

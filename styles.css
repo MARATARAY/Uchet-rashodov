@@ -40,6 +40,12 @@ button:hover { background: #1c3d2d; }
 .category-summary { margin-bottom: 22px; }
 .category-summary .section-heading { margin-bottom: 16px; }
 .category-totals { margin: 0; }
+.limit-help, .limit-saved { font-size: 13px; color: #687369; overflow-wrap: anywhere; }
+.limit-form { min-width: 0; padding: 16px 0; border-top: 1px solid #edf0e8; }
+.limit-form label { overflow-wrap: anywhere; }
+.limit-controls { display: flex; gap: 10px; }
+.limit-controls input { flex: 1; width: 0; }
+#category-limits { margin-bottom: 24px; }
 .category-total-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; padding: 12px 0; border-bottom: 1px solid #edf0e8; }
 .category-total-row:last-child { border-bottom: 0; }
 .category-total-row dt, .category-total-row dd { margin: 0; overflow-wrap: anywhere; }
