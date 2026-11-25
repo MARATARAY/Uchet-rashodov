@@ -13,6 +13,13 @@
       <span class="brand-mark" aria-hidden="true">↗</span>
       <div><p class="eyebrow">СЕМЕЙНЫЙ БЮДЖЕТ</p><h1>Наши расходы</h1></div>
     </header>
+    <div class="workspace">
+    <section class="card category-summary" aria-labelledby="budget-title">
+      <div class="section-heading"><div><h2 id="budget-title">Бюджет на текущий месяц</h2><p id="budget-month" class="quiet"></p></div></div>
+      <p class="limit-help">Пустой лимит — не задан, 0 — без плановых расходов.</p>
+      <div id="category-limits" role="group" aria-labelledby="budget-title"></div>
+    </section>
+    <div class="expense-content">
     <section class="card" aria-labelledby="form-title">
       <div class="section-heading"><h2 id="form-title">Добавить трату</h2><span class="quiet">Каждая мелочь на счету</span></div>
       <form id="expense-form" novalidate>
@@ -36,16 +43,13 @@
       <div><p id="total-title">Итого за текущий месяц</p><span id="month-label"></span></div>
       <strong id="month-total" aria-live="polite">0,00</strong>
     </section>
-    <section class="card category-summary" aria-labelledby="budget-title">
-      <div class="section-heading"><div><h2 id="budget-title">Бюджет на текущий месяц</h2><p id="budget-month" class="quiet"></p></div></div>
-      <p class="limit-help">Пустой лимит — не задан, 0 — без плановых расходов.</p>
-      <div id="category-limits" role="group" aria-labelledby="budget-title"></div>
-    </section>
     <section class="card history" aria-labelledby="history-title">
       <div class="section-heading"><h2 id="history-title">Все траты</h2><span class="quiet">Сначала новые</span></div>
       <p id="empty-state" class="empty">Пока нет трат<span>Добавьте первую — она появится здесь.</span></p>
       <ul id="expense-list" class="expense-list"></ul>
     </section>
+    </div>
+    </div>
     <footer class="page-footer">Маленькие записи. Понятный бюджет.</footer>
   </main>
   <dialog id="delete-dialog" aria-labelledby="delete-title" aria-describedby="delete-description">

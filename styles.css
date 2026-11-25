@@ -1,7 +1,9 @@
 :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #233b32; background: #F6E6F3; font-synthesis: none; }
 * { box-sizing: border-box; }
 body { margin: 0; }
-.page { width: min(100% - 40px, 800px); margin: 56px auto 28px; }
+.page { width: min(100% - 40px, 1164px); margin: 56px auto 28px; }
+.workspace { display: grid; grid-template-columns: 340px minmax(0, 800px); gap: 24px; align-items: start; }
+.expense-content { min-width: 0; }
 .page-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
 .brand-mark { display: grid; place-items: center; width: 52px; height: 52px; background: #e2e9d9; border-radius: 17px; font-size: 30px; }
 .eyebrow { margin: 0 0 6px; font-size: 10px; letter-spacing: 2px; font-weight: 700; color: #70816f; }
@@ -37,7 +39,7 @@ button:hover { background: #1c3d2d; }
 #month-label { color: #718064; font-size: 12px; }
 #month-total { font-size: clamp(25px, 5vw, 34px); letter-spacing: -1px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; min-width: 0; text-align: right; }
 .history .section-heading { margin-bottom: 8px; }
-.category-summary { margin-bottom: 22px; }
+.category-summary { min-width: 0; }
 .category-summary .section-heading { margin-bottom: 16px; }
 .limit-help, .limit-saved { font-size: 13px; color: #687369; overflow-wrap: anywhere; }
 .limit-form { min-width: 0; padding: 16px 0; border-top: 1px solid #edf0e8; }
@@ -71,6 +73,10 @@ dialog::backdrop { background: #172d2366; }
 .empty span { display: block; margin-top: 9px; color: #828a80; font-size: 13px; font-weight: 400; }
 .page-footer { text-align: center; font-size: 11px; color: #8a9384; margin-top: 26px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+@media (max-width: 1000px) {
+  .page { max-width: 800px; }
+  .workspace { grid-template-columns: minmax(0, 1fr); }
+}
 @media (max-width: 560px) {
   .page { width: calc(100% - 28px); margin-top: 28px; }
   .page-header { margin-bottom: 24px; }
