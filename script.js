@@ -35,9 +35,11 @@ function parseAmount(value, allowZero = false) {
 
 function formatMoney(cents) {
   // Format the integer and fractional parts separately to preserve exact cents.
-  const whole = BigInt(cents) / 100n;
-  const fraction = String(BigInt(cents) % 100n).padStart(2, "0");
-  return moneyFormatter.format(whole).replace(/,\d{2}$/, `,${fraction}`);
+  const value = BigInt(cents);
+  const absolute = value < 0n ? -value : value;
+  const whole = absolute / 100n;
+  const fraction = String(absolute % 100n).padStart(2, "0");
+  return `${value < 0n ? "−" : ""}${moneyFormatter.format(whole).replace(/,\d{2}$/, `,${fraction}`)}`;
 }
 
 function error(field, message) {
@@ -114,10 +116,27 @@ function renderLimits() {
     label.htmlFor = `limit-${index}`;
     label.textContent = `Лимит: ${name}`;
     const saved = document.createElement("p");
+    saved.id = `limit-saved-${index}`;
     saved.className = "limit-saved";
     saved.setAttribute("aria-live", "polite");
     const limit = (state.budgets[month] || []).find((item) => item.category === name);
     saved.textContent = limit ? `Лимит: ${formatMoney(limit.cents)}` : "Лимит: Не задан";
+    const summary = document.createElement("dl");
+    summary.className = "budget-values";
+    for (const [key, title] of [["spent", "Потрачено"], ["remaining", "Осталось"]]) {
+      const pair = document.createElement("div");
+      const term = document.createElement("dt");
+      term.textContent = title;
+      const amount = document.createElement("dd");
+      amount.id = `limit-${key}-${index}`;
+      pair.append(term, amount);
+      summary.append(pair);
+    }
+    const warning = document.createElement("p");
+    warning.id = `limit-warning-${index}`;
+    warning.className = "budget-warning";
+    warning.setAttribute("role", "status");
+    warning.hidden = true;
     const controls = document.createElement("div");
     controls.className = "limit-controls";
     const input = document.createElement("input");
@@ -137,7 +156,7 @@ function renderLimits() {
     message.className = "error";
     message.setAttribute("aria-live", "polite");
     controls.append(input, button);
-    form.append(label, saved, controls, message);
+    form.append(label, saved, summary, warning, controls, message);
     form.addEventListener("submit", (event) => {
       event.preventDefault();
       if (month !== today().slice(0, 7)) {
@@ -163,6 +182,7 @@ function renderLimits() {
       }
       saved.textContent = empty ? "Лимит: Не задан" : `Лимит: ${formatMoney(cents)}`;
       input.value = empty ? "" : `${Math.floor(cents / 100)},${String(cents % 100).padStart(2, "0")}`;
+      renderExpenses();
       $("status").textContent = empty ? `Лимит категории «${name}» снят.` : `Лимит категории «${name}» сохранён.`;
     });
     fragment.append(form);
@@ -181,18 +201,20 @@ function renderExpenses() {
     categoryTotals.set(item.category, categoryTotals.get(item.category) + BigInt(item.cents));
   }
   $("month-total").textContent = formatMoney(total);
-  const totalsFragment = document.createDocumentFragment();
-  for (const [name, cents] of categoryTotals) {
-    const row = document.createElement("div");
-    row.className = "category-total-row";
-    const label = document.createElement("dt");
-    label.textContent = name;
-    const amount = document.createElement("dd");
-    amount.textContent = formatMoney(cents);
-    row.append(label, amount);
-    totalsFragment.append(row);
-  }
-  $("category-totals").replaceChildren(totalsFragment);
+  const limits = new Map((state.budgets[month] || []).map((item) => [item.category, BigInt(item.cents)]));
+  state.categories.forEach((name, index) => {
+    const spent = categoryTotals.get(name);
+    const limit = limits.get(name);
+    const remaining = limit === undefined ? null : limit - spent;
+    $(`limit-saved-${index}`).textContent = limit === undefined ? "Лимит: Не задан" : `Лимит: ${formatMoney(limit)}`;
+    $(`limit-spent-${index}`).textContent = formatMoney(spent);
+    $(`limit-remaining-${index}`).textContent = remaining === null ? "—" : formatMoney(remaining);
+    const warning = $(`limit-warning-${index}`);
+    const overspent = remaining !== null && remaining < 0n;
+    warning.textContent = overspent ? `Перерасход: ${formatMoney(-remaining)}` : "";
+    warning.hidden = !overspent;
+    $(`limit-remaining-${index}`).className = overspent ? "budget-overrun" : "";
+  });
   $("month-label").textContent = new Intl.DateTimeFormat("ru-RU", { month: "long", year: "numeric" }).format(new Date());
   $("empty-state").hidden = state.expenses.length > 0;
   const fragment = document.createDocumentFragment();
