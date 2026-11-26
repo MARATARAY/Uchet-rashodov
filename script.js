@@ -9,6 +9,7 @@ const dateFormatter = new Intl.DateTimeFormat("ru-RU", { day: "numeric", month: 
 let state = { categories: [...DEFAULT_CATEGORIES], expenses: [], budgets: {} };
 let renderedBudgetMonth = "";
 let storageReadable = true;
+let savedSnapshot = null;
 let pendingExpense = null;
 let pendingPosition = 0;
 
@@ -67,6 +68,7 @@ function load() {
       throw new Error("Invalid saved budgets");
     }
     state = { ...data, budgets: data.budgets || {} };
+    savedSnapshot = raw;
   } catch {
     storageReadable = false;
     $("storage-error").textContent = "Не удалось прочитать сохранённые данные. Проверьте доступ к хранилищу браузера. Добавление приостановлено, чтобы сохранить прежние записи.";
@@ -76,7 +78,13 @@ function load() {
 function save(nextState) {
   if (!storageReadable) return false;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    if (localStorage.getItem(STORAGE_KEY) !== savedSnapshot) {
+      $("storage-error").textContent = "Данные изменены в другой вкладке. Сохранение отменено, чтобы не затереть изменения. Введённые значения остались в форме: скопируйте их, обновите страницу и повторите действие.";
+      return false;
+    }
+    const serialized = JSON.stringify(nextState);
+    localStorage.setItem(STORAGE_KEY, serialized);
+    savedSnapshot = serialized;
     state = nextState;
     $("storage-error").textContent = "";
     return true;
@@ -177,7 +185,7 @@ function renderLimits() {
       const limits = (state.budgets[month] || []).filter((item) => item.category !== name);
       if (!empty) limits.push({ category: name, cents });
       if (!save({ ...state, budgets: { ...state.budgets, [month]: limits } })) {
-        message.textContent = "Не удалось сохранить лимит. Прежний лимит не изменён. Проверьте доступ к хранилищу браузера.";
+        message.textContent = $("storage-error").textContent || "Не удалось сохранить лимит. Прежний лимит не изменён.";
         return;
       }
       saved.textContent = empty ? "Лимит: Не задан" : `Лимит: ${formatMoney(cents)}`;
@@ -276,7 +284,7 @@ $("confirm-delete").addEventListener("click", () => {
   if (index < 0) return;
   const expenses = state.expenses.filter((_, itemIndex) => itemIndex !== index);
   if (!save({ ...state, expenses })) {
-    $("delete-error").textContent = "Не удалось сохранить удаление. Трата и итоги не изменены. Проверьте доступ к хранилищу браузера и попробуйте ещё раз.";
+    $("delete-error").textContent = $("storage-error").textContent || "Не удалось сохранить удаление. Трата и итоги не изменены.";
     return;
   }
   renderExpenses();
